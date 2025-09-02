@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "d2r-loot-reader"
+version = "0.0.1"
+authors = [
+  { name="Your Name", email="you@example.com" },
+]
+description = "Diablo II: Resurrected Loot Tooltip Reader"
+readme = "README.md"
+license = "GPL-3.0-or-later"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "mss",
+    "opencv-python",
+    "numpy",
+    "Pillow",
+    
+]
+
+[project.urls]
+"Homepage" = "https://github.com/your-username/d2r-loot-reader"
+"Bug Tracker" = "https://github.com/your-username/d2r-loot-reader/issues"
+
+[project.scripts]
+d2rlootreader = "d2rlootreader.cli:main"
+
+[project.optional-dependencies]
+dev = [
+    "black",
+    "isort",
+]
+
+[tool.setuptools]
+packages = ["d2rlootreader"]
+
+[tool.black]
+line-length = 120
+
+[tool.isort]
+profile = "black"
+line_length = 120
