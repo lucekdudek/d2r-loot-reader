@@ -1,104 +1,81 @@
 # Diablo II: Resurrected Loot Tooltip Reader
 
-This is a command-line tool for Diablo II: Resurrected that helps with reading loot tooltips. It provides functionalities to capture a specific region of the screen, preprocess the captured image to enhance text readability, and display an overlay of the selected region for calibration.
+This project provides a tool to read and process loot tooltips from Diablo II: Resurrected.
 
-2## Features
-22
-*   **Interactive Region Selection:** Easily select any part of the screen to capture.
-*   **Image Preprocessing:** Enhance captured images for better text readability using various thresholding methods.
-*   **ROI Overlay:** Display a transparent overlay of the selected region for easy calibration.
-*   **Command-Line Interface:** All functionalities are accessible through a simple and intuitive CLI.
+## Features
 
-## How it Works
-
-The tool is designed to streamline the process of extracting information from in-game tooltips. It operates through a series of commands:
-
-1.  **`capture-save`**: The user selects a region of the screen where loot tooltips typically appear. The tool captures this region and saves it as an image file (e.g., `.png`). Simultaneously, it creates a JSON file containing the precise coordinates and dimensions of the captured region (Region of Interest or ROI).
-
-2.  **`preprocess-file`**: The captured image is then processed to improve the quality and clarity of the text. This is a crucial step for preparing the image for Optical Character Recognition (OCR). The tool offers several preprocessing modes, such as adaptive thresholding, to handle different lighting conditions and backgrounds.
-
-3.  **`overlay`**: To ensure that the capture region is correctly positioned, the tool can display a transparent overlay on the screen. This overlay visually represents the captured area, allowing the user to align it with the game's UI elements.
+* Captures in-game loot tooltips.
+* Saves captured tooltips as image files.
 
 ## Installation
 
-1.  **Prerequisites**: Ensure you have Python 3.8 or higher installed on your system.
+### Prerequisites
 
-2.  **Clone the repository**:
+* Python 3.8 or higher.
+
+### Steps
+
+1. **Clone the repository:**
+
     ```bash
     git clone https://github.com/your-username/d2r-loot-reader.git
     cd d2r-loot-reader
     ```
 
-3.  **Install dependencies**:
+2. **Create and activate a virtual environment (recommended):**
+
+    ```bash
+    python -m venv .venv
+    # On Windows
+    .venv\Scripts\activate
+    # On macOS/Linux
+    # source .venv/bin/activate
+    ```
+
+3. **Install dependencies:**
+
     ```bash
     pip install .
     ```
 
 ## Usage
 
-The tool is operated via the command line and has three main subcommands: `capture-save`, `preprocess-file`, and `overlay`.
+### Running the application
 
-### `capture-save`
+The primary way to run the application is by executing the `d2rlootreader.bat` script.
 
-This command allows you to select a region of the screen, capture it, and save the image and its coordinates.
-
-**Command:**
 ```bash
-d2r-loot-reader capture-save --out samples/crop.png
+.\d2rlootreader.bat
 ```
 
-**Execution:**
-1.  A full-screen capture of your desktop will be displayed.
-2.  Click and drag your mouse to draw a rectangle over the desired area.
-3.  Press `ENTER` or `SPACE` to confirm the selection, or `C` to cancel.
-4.  The captured image will be saved to the specified output path (e.g., `samples/crop.png`).
-5.  The coordinates of the selected region (ROI) will be saved in a corresponding JSON file (e.g., `samples/crop.json`).
+This script will activate the virtual environment, run the loot capture, and save the output to `tmp/temp.png`.
 
-### `preprocess-file`
+For silent execution (without a command prompt window), you can use `d2rlootreader.vbs`:
 
-This command reads an image, applies a specified preprocessing mode, and saves the result.
-
-**Command:**
 ```bash
-d2r-loot-reader preprocess-file --input samples/crop.png --out samples/crop_preprocessed.png --mode adaptive
+.\d2rlootreader.vbs
 ```
 
-**Arguments:**
-*   `--input`: Path to the input image file.
-*   `--out`: Path to save the preprocessed image.
-*   `--mode`: The preprocessing technique to apply. Options are:
-    *   `adaptive`: Adaptive Gaussian thresholding, ideal for uneven lighting.
-    *   `otsu`: Otsu's global thresholding, best for bimodal images.
-    *   `none`: Converts the image to grayscale without any thresholding.
+### Command Line Interface (CLI)
 
-### `overlay`
+After installation, you can also use the `d2rlootreader` command directly from your activated virtual environment:
 
-This command displays a transparent overlay of the previously saved ROI on the screen.
-
-**Command:**
 ```bash
-d2r-loot-reader overlay --roi-file samples/crop.json
+# To capture and save a tooltip to a specified file
+d2rlootreader capture-save --o="tmp/output.png"
 ```
 
-**Execution:**
-1.  A transparent red rectangle will appear on the screen, outlining the ROI defined in the specified JSON file.
-2.  This helps in verifying the position of the capture area.
-3.  Press the `ESC` key to close the overlay.
+## Development
 
-## Dependencies
+This project uses `black` for code formatting and `isort` for import sorting. You can install them via the `dev` optional dependency:
 
-This tool relies on the following Python libraries:
+```bash
+pip install .[dev]
+```
 
-*   **`mss`**: For efficient screen capturing.
-*   **`opencv-python`**: For image processing and the ROI selection interface.
-*   **`numpy`**: For numerical operations on image data.
-*   **`PyQt5`**: For rendering the transparent overlay window.
+Then, you can run them:
 
-## Future Work
-
-The current version of the tool focuses on capturing and preparing the image. The next logical step is to integrate an OCR engine to extract the text from the preprocessed tooltips. Some potential libraries for this are:
-
-*   **Tesseract (`pytesseract`)**: A powerful and popular OCR engine. It can be integrated by adding a new `ocr-file` command to the CLI, which would take a preprocessed image file and output the recognized text.
-*   **EasyOCR**: A more modern and deep-learning-based OCR library. This could be an alternative to Tesseract, potentially offering better accuracy for in-game text.
-
-By adding OCR capabilities, this tool can be extended to automatically read and log loot information, creating a comprehensive loot tracking system for Diablo II: Resurrected.
+```bash
+black .
+isort .
+```
