@@ -1,6 +1,6 @@
 # horadricapp third-party asset
 
-- omponent: d2r.traineddata (renamed from upstream eng.traineddata)
+- Component: d2r.traineddata (renamed from upstream eng.traineddata)
 - Origin: horadricapp (author: stephaistos)
 - License: MIT (see LICENSE-MIT.txt in this directory)
 - Modifications: filename only; content unmodified
