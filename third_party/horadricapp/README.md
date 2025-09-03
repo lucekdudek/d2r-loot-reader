@@ -5,7 +5,6 @@
 - License: MIT (see LICENSE-MIT.txt in this directory)
 - Modifications: filename only; content unmodified
 - Copyright: (c) 2025 stephaistos
-- Modifications: none (verbatim copy)
 
 This repository (d2r-loot-reader) is licensed under GPL-3.0-or-later.
 This third-party component remains available under its original MIT terms,
