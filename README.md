@@ -12,6 +12,7 @@ This project provides a tool to read and process loot tooltips from Diablo II: R
 ### Prerequisites
 
 * Python 3.8 or higher.
+* Tesseract OCR (Optical Character Recognition) engine must be installed and available in your system's PATH.
 
 ### Steps
 

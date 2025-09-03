@@ -1,11 +1,16 @@
 import argparse
 import os
+import pathlib
 import sys
 
 import cv2
+import pytesseract
 
 from d2rlootreader.region_selector import select_region
-from d2rlootreader.screen import capture_region, preprocess
+from d2rlootreader.screen import preprocess
+
+PROJECT_ROOT = pathlib.Path(__file__).resolve().parent.parent
+TESSERACT_BLACKLIST = "@#!$^&*_|=?><,;®"
 
 
 def _ensure_output_directory(file_path: str):
@@ -37,16 +42,12 @@ def capture_save_command(args):
               Expected attributes: 'out' (str) - output path for the captured image.
     """
     print("Please select the region of the screen to capture.")
-    captured_image = select_region()  # Now returns the image directly
-
-    if captured_image is None:  # Check for None if selection was canceled
+    captured_image = select_region()
+    if captured_image is None or captured_image.size == 0:
         print("Selection canceled. Exiting.", file=sys.stderr)
         return
-
-    print("Region selected and captured.")  # Simpler confirmation
-
+    print("Region selected and captured.")
     _ensure_output_directory(args.out)
-
     _save_image(captured_image, args.out)
 
 
@@ -68,16 +69,53 @@ def preprocess_file_command(args):
     mode = args.mode
 
     image = cv2.imread(input_path)
-
     if image is None or image.size == 0:
         print(f"Error: Could not read input image from {input_path}", file=sys.stderr)
         return
 
     processed_image = preprocess(image, mode=mode)
-
     _ensure_output_directory(output_path)
-
     _save_image(processed_image, output_path)
+
+
+def capture_ocr_command(args):
+    """
+    Select a region, preprocess it, then run Tesseract OCR and print or save the text.
+    """
+    print("Please select the region of the screen to capture.")
+    captured_image = select_region()
+    if captured_image is None or captured_image.size == 0:
+        print("Selection canceled or empty image.", file=sys.stderr)
+        return
+    _save_image(captured_image, "tmp/tmp-captured.png")
+
+    # Preprocess using the same pipeline as preprocess-file
+    processed = preprocess(captured_image, mode="none")
+    _save_image(processed, "tmp/tmp-processed.png")
+
+    # Convert to RGB for pytesseract (OpenCV uses BGR; grayscale needs expansion)
+    if len(processed.shape) == 2:
+        rgb = cv2.cvtColor(processed, cv2.COLOR_GRAY2RGB)
+    else:
+        rgb = cv2.cvtColor(processed, cv2.COLOR_BGR2RGB)
+
+    # Build Tesseract config
+    cfg_parts = [
+        f"--tessdata-dir {PROJECT_ROOT}",
+        f"-c tessedit_char_blacklist={TESSERACT_BLACKLIST}",
+    ]
+    config_str = " ".join(cfg_parts)
+
+    # Run OCR
+    try:
+        text = pytesseract.image_to_string(rgb, lang="d2r", config=config_str)
+    except RuntimeError as e:
+        print(f"Tesseract OCR failed: {e}", file=sys.stderr)
+        return
+
+    # Output text
+    with open("tmp/tmp-text.log", "w", encoding="utf-8") as f:
+        f.write(text)
 
 
 def main():
@@ -114,8 +152,13 @@ def main():
     )
     preprocess_file_parser.set_defaults(func=preprocess_file_command)
 
-    args = parser.parse_args()
+    # Capture-ocr subcommand
+    capture_ocr_parser = subparsers.add_parser(
+        "capture-ocr", help="Selects a screen region, preprocesses it, and extracts text with Tesseract."
+    )
+    capture_ocr_parser.set_defaults(func=capture_ocr_command)
 
+    args = parser.parse_args()
     if hasattr(args, "func"):
         args.func(args)
     else:

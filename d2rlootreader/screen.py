@@ -43,6 +43,7 @@ def capture_region(sct_instance, region):
 def preprocess(image_bgr: np.ndarray, mode: Literal["otsu", "adaptive", "none"] = "adaptive") -> np.ndarray:
     """
     Converts a BGR image to grayscale and applies thresholding based on the specified mode.
+    Output will have WHITE background with BLACK text for optimal OCR performance.
 
     Args:
         image_bgr (np.ndarray): The input image in BGR format.
@@ -56,12 +57,14 @@ def preprocess(image_bgr: np.ndarray, mode: Literal["otsu", "adaptive", "none"] 
     Returns:
         np.ndarray: A single-channel uint8 binary image (0 or 255) for "otsu" and
                     "adaptive" modes, or a single-channel uint8 grayscale image for
-                    "none" mode.
+                    "none" mode. Background will be WHITE (255) and text will be BLACK (0).
 
     Raises:
         ValueError: If `blockSize` is not an odd integer >= 3 for "adaptive" mode.
     """
     gray = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2GRAY)
+    gray = cv2.GaussianBlur(gray, (3, 3), 0)
+    gray = cv2.bitwise_not(gray)
 
     if mode == "otsu":
         _, binarized = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
@@ -80,7 +83,7 @@ def preprocess(image_bgr: np.ndarray, mode: Literal["otsu", "adaptive", "none"] 
             cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
             cv2.THRESH_BINARY,
             blockSize=ADAPTIVE_THRESHOLD_BLOCK_SIZE,
-            C=5,
+            C=4,
         )
         return binarized
     elif mode == "none":

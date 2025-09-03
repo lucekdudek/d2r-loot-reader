@@ -21,7 +21,7 @@ dependencies = [
     "opencv-python",
     "numpy",
     "Pillow",
-    
+    "pytesseract",
 ]
 
 [project.urls]
