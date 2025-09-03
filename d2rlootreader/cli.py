@@ -10,6 +10,7 @@ from d2rlootreader.region_selector import select_region
 from d2rlootreader.screen import preprocess
 
 PROJECT_ROOT = pathlib.Path(__file__).resolve().parent.parent
+TESSDATA_DIR = PROJECT_ROOT / "third_party" / "horadricapp"
 TESSERACT_BLACKLIST = "@#!$^&*_|=?><,;®"
 
 
@@ -101,7 +102,7 @@ def capture_ocr_command(args):
 
     # Build Tesseract config
     cfg_parts = [
-        f"--tessdata-dir {PROJECT_ROOT}",
+        f"--tessdata-dir {TESSDATA_DIR}",
         f"-c tessedit_char_blacklist={TESSERACT_BLACKLIST}",
     ]
     config_str = " ".join(cfg_parts)

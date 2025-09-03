@@ -1,0 +1,8 @@
+SPDX-License-Identifier: MIT
+Component: d2r.traineddata
+Upstream-Name: eng.traineddata
+Local-Name: d2r.traineddata
+Upstream: horadricapp (author: stephaistos)
+Copyright: (c) 2025 stephaistos
+License-File: LICENSE-MIT.txt
+Notes: Content unmodified; filename changed for integration. See README.md for details.

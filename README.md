@@ -80,3 +80,8 @@ Then, you can run them:
 black .
 isort .
 ```
+
+## License
+
+This project is licensed under the GPL-3.0-or-later (see the LICENSE file).
+It includes a component from the “horadricapp” project (author: stephaistos) under the MIT license; the details and full license text are located in third_party/horadricapp/.
