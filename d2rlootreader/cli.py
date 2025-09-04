@@ -1,7 +1,8 @@
 import argparse
 import os
-import pathlib
 import sys
+from datetime import datetime, timezone
+from pathlib import Path
 
 import cv2
 import pytesseract
@@ -9,24 +10,27 @@ import pytesseract
 from d2rlootreader.region_selector import select_region
 from d2rlootreader.screen import preprocess
 
-PROJECT_ROOT = pathlib.Path(__file__).resolve().parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 TESSDATA_DIR = PROJECT_ROOT / "third_party" / "horadricapp"
 TESSERACT_BLACKLIST = "@#!$^&*_|=?><,;®‘"
+
+TMP_DIR = Path(os.environ.get("D2R_LOOT_READER_TMP", PROJECT_ROOT / "tmp"))
 
 
 def _ensure_output_directory(file_path: str):
     """
     Ensures that the directory for the given file path exists.
     """
-    output_dir = os.path.dirname(file_path)
-    if output_dir and not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+    output_dir = Path(file_path).parent
+    if output_dir and not output_dir.exists():
+        output_dir.mkdir(parents=True, exist_ok=True)
 
 
 def _save_image(image, path: str):
     """
     Saves an image to the specified path and prints a success or error message.
     """
+    path = str(path)  # Ensure compatibility with cv2.imwrite
     if cv2.imwrite(path, image):
         print(f"Image saved to: {path}")
     else:
@@ -83,16 +87,23 @@ def capture_ocr_command(args):
     """
     Select a region, preprocess it, then run Tesseract OCR and print or save the text.
     """
+    command_timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S-%f")[:-3]  # trim to milliseconds
+
+    captured_path = TMP_DIR / f"{command_timestamp}-captured.png"
+    processed_path = TMP_DIR / f"{command_timestamp}-processed.png"
+    textlog_path = TMP_DIR / f"{command_timestamp}-text.txt"
+
     print("Please select the region of the screen to capture.")
     captured_image = select_region()
     if captured_image is None or captured_image.size == 0:
         print("Selection canceled or empty image.", file=sys.stderr)
         return
-    _save_image(captured_image, "tmp/tmp-captured.png")
+    _ensure_output_directory(captured_path)
+    _save_image(captured_image, captured_path)
 
     # Preprocess using the same pipeline as preprocess-file
     processed = preprocess(captured_image, mode="none")
-    _save_image(processed, "tmp/tmp-processed.png")
+    _save_image(processed, processed_path)
 
     # Convert to RGB for pytesseract (OpenCV uses BGR; grayscale needs expansion)
     if len(processed.shape) == 2:
@@ -115,7 +126,7 @@ def capture_ocr_command(args):
         return
 
     # Output text
-    with open("tmp/tmp-text.log", "w", encoding="utf-8") as f:
+    with open(textlog_path, "w", encoding="utf-8") as f:
         f.write(text)
 
 
