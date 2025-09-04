@@ -1,5 +1,5 @@
 import argparse
-import os
+import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -7,14 +7,14 @@ from pathlib import Path
 import cv2
 import pytesseract
 
+from d2rlootreader.cfg import TESSDATA_DIR, TESSERACT_BLACKLIST, TMP_DIR
+from d2rlootreader.item_parser import parse_item_lines_to_json
 from d2rlootreader.region_selector import select_region
 from d2rlootreader.screen import preprocess
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-TESSDATA_DIR = PROJECT_ROOT / "third_party" / "horadricapp"
-TESSERACT_BLACKLIST = "@#!$^&*_|=?><,;®‘"
 
-TMP_DIR = Path(os.environ.get("D2R_LOOT_READER_TMP", PROJECT_ROOT / "tmp"))
+def _timestamp() -> str:
+    return datetime.now(timezone.utc).strftime("[%Y-%m-%d %H:%M:%S.%f]")[:-3]
 
 
 def _ensure_output_directory(file_path: str):
@@ -32,50 +32,54 @@ def _save_image(image, path: str):
     """
     path = str(path)  # Ensure compatibility with cv2.imwrite
     if cv2.imwrite(path, image):
-        print(f"Image saved to: {path}")
+        print(f"{_timestamp()} Image saved to: {path}")
     else:
-        print(f"Error: Failed to save image to {path}", file=sys.stderr)
+        print(f"{_timestamp()} Error: Failed to save image to {path}", file=sys.stderr)
+
+
+def _save_text(text: str, path: str):
+    """
+    Saves text to the specified path and prints a success or error message.
+    """
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(text)
+        print(f"{_timestamp()} Text output saved to: {path}")
+    except Exception as e:
+        print(f"{_timestamp()} Error: Failed to save text to {path}: {e}", file=sys.stderr)
+
+
+def _save_json(obj, path: str):
+    """
+    Saves a JSON object to the specified path and prints a success or error message.
+    """
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(obj, f, ensure_ascii=False, indent=2)
+        print(f"{_timestamp()} Item JSON saved to: {path}")
+    except Exception as e:
+        print(f"{_timestamp()} Error: Failed to save JSON to {path}: {e}", file=sys.stderr)
 
 
 def capture_save_command(args):
-    """
-    Handles the 'capture-save' CLI command.
-    Allows the user to select a screen region, captures it, and saves it to a specified file.
-
-    Args:
-        args: An argparse.Namespace object containing the command-line arguments.
-              Expected attributes: 'out' (str) - output path for the captured image.
-    """
-    print("Please select the region of the screen to capture.")
+    print(f"{_timestamp()} Please select the region of the screen to capture.")
     captured_image = select_region()
     if captured_image is None or captured_image.size == 0:
-        print("Selection canceled. Exiting.", file=sys.stderr)
+        print(f"{_timestamp()} Selection canceled. Exiting.", file=sys.stderr)
         return
-    print("Region selected and captured.")
+    print(f"{_timestamp()} Region selected and captured.")
     _ensure_output_directory(args.out)
     _save_image(captured_image, args.out)
 
 
 def preprocess_file_command(args):
-    """
-    Handles the 'preprocess-file' CLI command.
-    Reads an image from a specified input path, preprocesses it using the given mode,
-    and saves the result to an output path.
-
-    Args:
-        args: An argparse.Namespace object containing the command-line arguments.
-              Expected attributes:
-              - 'input' (str): Input image path.
-              - 'out' (str): Output path for the processed image.
-              - 'mode' (str): Preprocessing mode (e.g., "none", "otsu", "adaptive").
-    """
     input_path = args.input
     output_path = args.out
     mode = args.mode
 
     image = cv2.imread(input_path)
     if image is None or image.size == 0:
-        print(f"Error: Could not read input image from {input_path}", file=sys.stderr)
+        print(f"{_timestamp()} Error: Could not read input image from {input_path}", file=sys.stderr)
         return
 
     processed_image = preprocess(image, mode=mode)
@@ -84,61 +88,65 @@ def preprocess_file_command(args):
 
 
 def capture_ocr_command(args):
-    """
-    Select a region, preprocess it, then run Tesseract OCR and print or save the text.
-    """
-    command_timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S-%f")[:-3]  # trim to milliseconds
+    start_time = datetime.now(timezone.utc)
+    command_timestamp = start_time.strftime("%Y%m%d-%H%M%S-%f")[:-3]  # trim to milliseconds
 
     captured_path = TMP_DIR / f"{command_timestamp}-captured.png"
     processed_path = TMP_DIR / f"{command_timestamp}-processed.png"
     textlog_path = TMP_DIR / f"{command_timestamp}-text.txt"
+    jsonlog_path = TMP_DIR / f"{command_timestamp}-item.json"
 
-    print("Please select the region of the screen to capture.")
+    print(f"{_timestamp()} Please select the region of the screen to capture.")
     captured_image = select_region()
     if captured_image is None or captured_image.size == 0:
-        print("Selection canceled or empty image.", file=sys.stderr)
+        print(f"{_timestamp()} Selection canceled or empty image.", file=sys.stderr)
         return
     _ensure_output_directory(captured_path)
     _save_image(captured_image, captured_path)
 
-    # Preprocess using the same pipeline as preprocess-file
+    print(f"{_timestamp()} Preprocessing image...")
     processed = preprocess(captured_image, mode="none")
     _save_image(processed, processed_path)
 
+    print(f"{_timestamp()} Running OCR...")
     # Convert to RGB for pytesseract (OpenCV uses BGR; grayscale needs expansion)
     if len(processed.shape) == 2:
         rgb = cv2.cvtColor(processed, cv2.COLOR_GRAY2RGB)
     else:
         rgb = cv2.cvtColor(processed, cv2.COLOR_BGR2RGB)
 
-    # Build Tesseract config
     cfg_parts = [
         f"--tessdata-dir {TESSDATA_DIR}",
         f"-c tessedit_char_blacklist={TESSERACT_BLACKLIST}",
     ]
     config_str = " ".join(cfg_parts)
 
-    # Run OCR
     try:
         text = pytesseract.image_to_string(rgb, lang="d2r", config=config_str)
     except RuntimeError as e:
-        print(f"Tesseract OCR failed: {e}", file=sys.stderr)
+        print(f"{_timestamp()} Tesseract OCR failed: {e}", file=sys.stderr)
         return
 
-    # Output text
-    with open(textlog_path, "w", encoding="utf-8") as f:
-        f.write(text)
+    _save_text(text, textlog_path)
+
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+
+    print(f"{_timestamp()} Parsing item lines to JSON...")
+    item_json = parse_item_lines_to_json(lines)
+
+    _save_json(item_json, jsonlog_path)
+
+    print(f"{_timestamp()} Outputting item JSON to stdout:")
+    print(json.dumps(item_json, ensure_ascii=False, indent=2))
+
+    elapsed = (datetime.now(timezone.utc) - start_time).total_seconds()
+    print(f"{_timestamp()} capture-ocr completed in {elapsed:.2f} seconds.")
 
 
 def main():
-    """
-    Main entry point for the D2R Loot Reader CLI application.
-    Parses command-line arguments and executes the corresponding command.
-    """
     parser = argparse.ArgumentParser(description="D2R Loot Reader CLI")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
-    # Capture-save subcommand
     capture_save_parser = subparsers.add_parser(
         "capture-save", help="Selects a screen region, captures it, and saves to a file."
     )
@@ -147,7 +155,6 @@ def main():
     )
     capture_save_parser.set_defaults(func=capture_save_command)
 
-    # Preprocess-file subcommand
     preprocess_file_parser = subparsers.add_parser(
         "preprocess-file", help="Reads an image, preprocesses it, and saves the result."
     )
@@ -164,7 +171,6 @@ def main():
     )
     preprocess_file_parser.set_defaults(func=preprocess_file_command)
 
-    # Capture-ocr subcommand
     capture_ocr_parser = subparsers.add_parser(
         "capture-ocr", help="Selects a screen region, preprocesses it, and extracts text with Tesseract."
     )
@@ -172,7 +178,10 @@ def main():
 
     args = parser.parse_args()
     if hasattr(args, "func"):
-        args.func(args)
+        result = args.func(args)
+        if args.command == "capture-ocr" and result is not None:
+            # Already printed to stdout in capture_ocr_command
+            pass
     else:
         parser.print_help()
 

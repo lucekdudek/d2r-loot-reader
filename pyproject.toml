@@ -18,10 +18,11 @@ classifiers = [
 ]
 dependencies = [
     "mss",
-    "opencv-python",
     "numpy",
+    "opencv-python",
     "Pillow",
     "pytesseract",
+    "rapidfuzz",
 ]
 
 [project.urls]
