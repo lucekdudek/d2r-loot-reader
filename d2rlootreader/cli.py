@@ -11,7 +11,7 @@ from d2rlootreader.screen import preprocess
 
 PROJECT_ROOT = pathlib.Path(__file__).resolve().parent.parent
 TESSDATA_DIR = PROJECT_ROOT / "third_party" / "horadricapp"
-TESSERACT_BLACKLIST = "@#!$^&*_|=?><,;®"
+TESSERACT_BLACKLIST = "@#!$^&*_|=?><,;®‘"
 
 
 def _ensure_output_directory(file_path: str):
