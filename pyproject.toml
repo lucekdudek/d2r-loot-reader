@@ -36,6 +36,7 @@ d2rlootreader = "d2rlootreader.cli:main"
 dev = [
     "black",
     "isort",
+    "pytest"
 ]
 
 [tool.setuptools]
