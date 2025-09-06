@@ -311,8 +311,8 @@ ITEMS = [
         "quality": "Runeword",
         "name": "Call to Arms",
         "base": "Divine Scepter",
-        "slot": "weapon",
-        "tier": "Elite",
+        "slot": "scep",
+        "tier": "Exceptional",
         "requirements": {"strength": 103, "level": 57},
         "stats": {"one_hand_damage": [61, 146]},
         "affixes": {
@@ -362,8 +362,8 @@ ITEMS = [
         "quality": "Set",
         "name": "Guillaume's Face",
         "base": "Winged Helm",
-        "slot": "head",
-        "tier": "Elite",
+        "slot": "helm",
+        "tier": "Exceptional",
         "requirements": {"strength": 115, "level": 34},
         "stats": {"defense": 217},
         "affixes": {
@@ -395,7 +395,7 @@ ITEMS = [
         "quality": "Set",
         "name": "Naj's Puzzler",
         "base": "Elder Staff",
-        "slot": "weapon",
+        "slot": "staf",
         "tier": "Elite",
         "requirements": {"strength": 44, "dexterity": 37, "level": 78},
         "stats": {"two_hand_damage": [200, 232]},
@@ -454,7 +454,7 @@ ITEMS = [
         "quality": "Unique",
         "name": "Bartuc's Cut-throat",
         "base": "Runic Talons",
-        "slot": "weapon",
+        "slot": "h2h2",
         "tier": "Elite",
         "requirements": {"strength": 115, "dexterity": 115, "level": 67},
         "stats": {"one_hand_damage": [105, 197]},
@@ -619,8 +619,8 @@ def test_parse_item_lines_to_json(item):
     assert item["quality"] == parse_itemed["quality"]
     assert item["name"] == parse_itemed["name"]
     assert item["base"] == parse_itemed["base"]
-    # assert item["slot"] == parse_itemed["slot"]
-    # assert item["tier"] == parse_itemed["tier"]
+    assert item["slot"] == parse_itemed["slot"]
+    assert item["tier"] == parse_itemed["tier"]
     # assert item["requirements"] == parse_itemed["requirements"]
     # assert item["stats"] == parse_itemed["stats"]
     # assert item["affixes"] == parse_itemed["affixes"]
