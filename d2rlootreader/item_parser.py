@@ -45,12 +45,13 @@ class ItemParser:
             "affixes": {},
             "tooltip": self.lines,
         }
-        
+
         result["quality"], result["name"] = self._parse_item_quality_n_name()
-        result["base"], result["slot"], result["tier"] = self._parse_item_base_n_slot_n_tier(0 if result["quality"] in (Q.BASE.value, Q.MAGIC.value) else 1)
+        result["base"], result["slot"], result["tier"] = self._parse_item_base_n_slot_n_tier(
+            0 if result["quality"] in (Q.BASE.value, Q.MAGIC.value) else 1
+        )
         if result["quality"] == Q.BASE.value:
             result["name"] = result["base"]
-
 
         return result
 
@@ -78,23 +79,31 @@ class ItemParser:
                 return Q.SET.value, match
 
         rares = self.R.get("rares", {})
-        prefix, _, _ = process.extractOne(
-            name_line, rares["prefixes"], scorer=fuzz.partial_ratio, score_cutoff=85
-        ) or (None, 0, None)
-        suffix, _, _ = process.extractOne(
-            name_line, rares["suffixes"], scorer=fuzz.partial_ratio, score_cutoff=85
-        ) or (None, 0, None)
+        prefix, _, _ = process.extractOne(name_line, rares["prefixes"], scorer=fuzz.partial_ratio, score_cutoff=85) or (
+            None,
+            0,
+            None,
+        )
+        suffix, _, _ = process.extractOne(name_line, rares["suffixes"], scorer=fuzz.partial_ratio, score_cutoff=85) or (
+            None,
+            0,
+            None,
+        )
         name = f"{prefix} {suffix}".strip()
         if name.lower() == name_line.lower():
             return Q.RARE.value, name
 
         magic = self.R.get("magic", {})
-        prefix, _, _ = process.extractOne(
-            name_line, magic["prefixes"], scorer=fuzz.partial_ratio, score_cutoff=85
-        ) or (None, 0, None)
-        suffix, _, _ = process.extractOne(
-            name_line, magic["suffixes"], scorer=fuzz.partial_ratio, score_cutoff=85
-        ) or (None, 0, None)
+        prefix, _, _ = process.extractOne(name_line, magic["prefixes"], scorer=fuzz.partial_ratio, score_cutoff=85) or (
+            None,
+            0,
+            None,
+        )
+        suffix, _, _ = process.extractOne(name_line, magic["suffixes"], scorer=fuzz.partial_ratio, score_cutoff=85) or (
+            None,
+            0,
+            None,
+        )
         name = f"{prefix} {suffix}".strip()
         if prefix and suffix:
             # TODO handle one affix magic items
@@ -107,9 +116,7 @@ class ItemParser:
         bases = self.R.get("bases", {})
 
         for scorer in self.scorers:
-            match, _, _ = process.extractOne(
-                base_line, bases.keys(), scorer=scorer, score_cutoff=85
-            ) or (None, 0, None)
+            match, _, _ = process.extractOne(base_line, bases.keys(), scorer=scorer, score_cutoff=85) or (None, 0, None)
             if match:
                 return match, bases[match]["slot"], bases[match]["tier"]
 
