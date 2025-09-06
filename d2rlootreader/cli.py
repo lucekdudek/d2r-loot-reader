@@ -8,7 +8,7 @@ import cv2
 import pytesseract
 
 from d2rlootreader.cfg import TESSDATA_DIR, TESSERACT_BLACKLIST, TMP_DIR
-from d2rlootreader.item_parser import parse_item_lines_to_json
+from d2rlootreader.item_parser import ItemParser
 from d2rlootreader.region_selector import select_region
 from d2rlootreader.screen import preprocess
 
@@ -132,7 +132,7 @@ def capture_ocr_command(args):
     lines = [line.strip() for line in text.splitlines() if line.strip()]
 
     print(f"{_timestamp()} Parsing item lines to JSON...")
-    item_json = parse_item_lines_to_json(lines)
+    item_json = ItemParser(lines).parse_item_lines_to_json()
 
     _save_json(item_json, jsonlog_path)
 
