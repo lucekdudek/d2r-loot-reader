@@ -6,8 +6,6 @@ from rapidfuzz import fuzz, process
 
 from d2rlootreader.cfg import REPOSITORY_DIR
 
-# match, score, idx = process.extractOne(query, choices, scorer=fuzz.ratio, score_cutoff=50)
-
 
 class Q(Enum):
     UNKNOWN = "Unknown"
@@ -20,7 +18,8 @@ class Q(Enum):
 
 
 class ItemParser:
-    scorers = [fuzz.ratio, fuzz.partial_ratio]
+    none_match = (None, 0, None)
+    scorers = [fuzz.ratio, fuzz.token_set_ratio]
 
     def __init__(self, lines: List[str]):
         self.R = self.repository_data = self.load_repository_data()
@@ -79,34 +78,29 @@ class ItemParser:
                 return Q.SET.value, match
 
         rares = self.R.get("rares", {})
-        prefix, _, _ = process.extractOne(name_line, rares["prefixes"], scorer=fuzz.partial_ratio, score_cutoff=85) or (
-            None,
-            0,
-            None,
+        prefix, _, _ = (
+            process.extractOne(name_line, rares["prefixes"], scorer=fuzz.partial_ratio, score_cutoff=85)
+            or self.none_match
         )
-        suffix, _, _ = process.extractOne(name_line, rares["suffixes"], scorer=fuzz.partial_ratio, score_cutoff=85) or (
-            None,
-            0,
-            None,
+        suffix, _, _ = (
+            process.extractOne(name_line, rares["suffixes"], scorer=fuzz.partial_ratio, score_cutoff=85)
+            or self.none_match
         )
         name = f"{prefix} {suffix}".strip()
         if name.lower() == name_line.lower():
             return Q.RARE.value, name
 
         magic = self.R.get("magic", {})
-        prefix, _, _ = process.extractOne(name_line, magic["prefixes"], scorer=fuzz.partial_ratio, score_cutoff=85) or (
-            None,
-            0,
-            None,
+        prefix, _, _ = (
+            process.extractOne(name_line, magic["prefixes"], scorer=fuzz.token_set_ratio, score_cutoff=85)
+            or self.none_match
         )
-        suffix, _, _ = process.extractOne(name_line, magic["suffixes"], scorer=fuzz.partial_ratio, score_cutoff=85) or (
-            None,
-            0,
-            None,
+        suffix, _, _ = (
+            process.extractOne(name_line, magic["suffixes"], scorer=fuzz.token_set_ratio, score_cutoff=85)
+            or self.none_match
         )
-        name = f"{prefix} {suffix}".strip()
-        if prefix and suffix:
-            # TODO handle one affix magic items
+        name = ((f"{prefix} " if prefix else "") + (suffix or "")).strip()
+        if prefix or suffix:
             return Q.MAGIC.value, name
 
         return Q.BASE.value, None
@@ -116,8 +110,9 @@ class ItemParser:
         bases = self.R.get("bases", {})
 
         for scorer in self.scorers:
-            match, _, _ = process.extractOne(base_line, bases.keys(), scorer=scorer, score_cutoff=85) or (None, 0, None)
-            if match:
-                return match, bases[match]["slot"], bases[match]["tier"]
+            matches = process.extract(base_line, bases.keys(), scorer=scorer, score_cutoff=85)
+            if matches:
+                longest_match = max(matches, key=lambda m: len(m[0]))
+                return longest_match[0], bases[longest_match[0]]["slot"], bases[longest_match[0]]["tier"]
 
         return None, None, None
