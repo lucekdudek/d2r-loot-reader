@@ -1,6 +1,7 @@
 import json
+import re
 from enum import Enum
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
 
 from rapidfuzz import fuzz, process
 
@@ -18,8 +19,9 @@ class Q(Enum):
 
 
 class ItemParser:
-    none_match = (None, 0, None)
-    scorers = [fuzz.ratio, fuzz.token_set_ratio]
+    _none_match = (None, 0, None)
+    _scorers = [fuzz.ratio, fuzz.token_set_ratio]
+    _num_like = r"(?i)\b(?:\d|[OIlZSBgq])+\b"
 
     def __init__(self, lines: List[str]):
         self.R = self.repository_data = self.load_repository_data()
@@ -44,75 +46,160 @@ class ItemParser:
             "affixes": {},
             "tooltip": self.lines,
         }
+        lines = self.lines[:]
 
-        result["quality"], result["name"] = self._parse_item_quality_n_name()
-        result["base"], result["slot"], result["tier"] = self._parse_item_base_n_slot_n_tier(
-            0 if result["quality"] in (Q.BASE.value, Q.MAGIC.value) else 1
-        )
+        result["quality"], result["name"], lines = self._parse_item_quality_name(lines)
+        result["base"], result["slot"], result["tier"], lines = self._parse_item_base_slot_tier(lines)
         if result["quality"] == Q.BASE.value:
             result["name"] = result["base"]
 
+        result["requirements"], result["stats"], result["affixes"], lines = self._parse_requirements_stats_affixes(
+            lines
+        )
+
         return result
 
-    def _parse_item_quality_n_name(self):
-        name_line = self.lines[0].strip()
+    def _normalize_line(self, line: str) -> str:
+        class_, _, _ = process.extractOne(
+            line, self.R.get("classes", {}), scorer=fuzz.partial_token_set_ratio, processor=str.lower, score_cutoff=85
+        ) or (None, 0, None)
+        if class_:
+            align = fuzz.partial_ratio_alignment(line, class_, processor=str.lower)
+            start, end = align.src_start, align.src_end
+            # og_class = line[start:end]
+            line = line[:start] + "[Class]" + line[end:]
+
+        skill, _, _ = process.extractOne(
+            line, self.R.get("skills", {}), scorer=fuzz.token_set_ratio, processor=str.lower, score_cutoff=70
+        ) or (None, 0, None)
+        if skill:
+            align = fuzz.partial_ratio_alignment(line, skill, processor=str.lower)
+            start, end = align.src_start, align.src_end
+            # og_class = line[start:end]
+            line = line[:start] + "[Skill]" + line[end:]
+
+        numbers = re.findall(self._num_like, line)
+        line = re.sub(self._num_like, "#", line)
+
+        params = []
+        num_idx = 0
+        for match in re.finditer(r"#|\[Class\]|\[Skill\]", line):
+            token = match.group(0)
+            if token == "#" and num_idx < len(numbers):
+                params.append(int(numbers[num_idx]) if numbers[num_idx].isdigit() else numbers[num_idx])
+                num_idx += 1
+            elif token == "[Class]" and class_:
+                params.append(class_)
+            elif token == "[Skill]" and skill:
+                params.append(skill)
+
+        return line, params
+
+    def _parse_item_quality_name(self, lines):
+        name_line = lines[0].strip()
 
         match, _, _ = process.extractOne(
-            name_line, self.R.get("runewords", {}).keys(), scorer=fuzz.ratio, score_cutoff=85
+            name_line, self.R.get("runewords", {}).keys(), scorer=fuzz.ratio, processor=str.lower, score_cutoff=85
         ) or (None, 0, None)
         if match:
-            return Q.RUNEWORD.value, match
+            return Q.RUNEWORD.value, match, lines[1:]
 
-        for scorer in self.scorers:
+        for scorer in self._scorers:
             match, _, _ = process.extractOne(
-                name_line, self.R.get("uniques", {}).keys(), scorer=scorer, score_cutoff=85
+                name_line, self.R.get("uniques", {}).keys(), scorer=scorer, processor=str.lower, score_cutoff=85
             ) or (None, 0, None)
             if match:
-                return Q.UNIQUE.value, match
+                return Q.UNIQUE.value, match, lines[1:]
 
-        for scorer in self.scorers:
+        for scorer in self._scorers:
             match, _, _ = process.extractOne(
-                name_line, self.R.get("set", {}).keys(), scorer=scorer, score_cutoff=85
+                name_line, self.R.get("set", {}).keys(), scorer=scorer, processor=str.lower, score_cutoff=85
             ) or (None, 0, None)
             if match:
-                return Q.SET.value, match
+                return Q.SET.value, match, lines[1:]
 
         rares = self.R.get("rares", {})
         prefix, _, _ = (
-            process.extractOne(name_line, rares["prefixes"], scorer=fuzz.partial_ratio, score_cutoff=85)
-            or self.none_match
+            process.extractOne(
+                name_line, rares["prefixes"], scorer=fuzz.partial_ratio, processor=str.lower, score_cutoff=90
+            )
+            or self._none_match
         )
         suffix, _, _ = (
-            process.extractOne(name_line, rares["suffixes"], scorer=fuzz.partial_ratio, score_cutoff=85)
-            or self.none_match
+            process.extractOne(
+                name_line, rares["suffixes"], scorer=fuzz.partial_ratio, processor=str.lower, score_cutoff=90
+            )
+            or self._none_match
         )
         name = f"{prefix} {suffix}".strip()
         if name.lower() == name_line.lower():
-            return Q.RARE.value, name
+            return Q.RARE.value, name, lines[1:]
 
         magic = self.R.get("magic", {})
         prefix, _, _ = (
-            process.extractOne(name_line, magic["prefixes"], scorer=fuzz.token_set_ratio, score_cutoff=85)
-            or self.none_match
+            process.extractOne(
+                name_line, magic["prefixes"], scorer=fuzz.token_set_ratio, processor=str.lower, score_cutoff=85
+            )
+            or self._none_match
         )
         suffix, _, _ = (
-            process.extractOne(name_line, magic["suffixes"], scorer=fuzz.token_set_ratio, score_cutoff=85)
-            or self.none_match
+            process.extractOne(
+                name_line, magic["suffixes"], scorer=fuzz.token_set_ratio, processor=str.lower, score_cutoff=85
+            )
+            or self._none_match
         )
         name = ((f"{prefix} " if prefix else "") + (suffix or "")).strip()
         if prefix or suffix:
-            return Q.MAGIC.value, name
+            return Q.MAGIC.value, name, lines
 
-        return Q.BASE.value, None
+        return Q.BASE.value, None, lines
 
-    def _parse_item_base_n_slot_n_tier(self, line_idx):
-        base_line = self.lines[line_idx].strip()
+    def _parse_item_base_slot_tier(self, lines):
+        base_line = lines[0].strip()
         bases = self.R.get("bases", {})
 
-        for scorer in self.scorers:
+        for scorer in self._scorers:
             matches = process.extract(base_line, bases.keys(), scorer=scorer, score_cutoff=85)
             if matches:
                 longest_match = max(matches, key=lambda m: len(m[0]))
-                return longest_match[0], bases[longest_match[0]]["slot"], bases[longest_match[0]]["tier"]
+                return longest_match[0], bases[longest_match[0]]["slot"], bases[longest_match[0]]["tier"], lines[1:]
 
-        return None, None, None
+        return None, None, None, lines
+
+    def _parse_requirements_stats_affixes(self, lines):
+        requirements = {}
+        stats = {}
+        affixes = []
+        remaining_lines = []
+
+        for line in lines:
+            normal_line, params = self._normalize_line(line)
+
+            requirement, _, _ = process.extractOne(
+                normal_line,
+                self.R.get("requirements", {}).keys(),
+                scorer=fuzz.ratio,
+                processor=str.lower,
+                score_cutoff=85,
+            ) or (None, 0, None)
+            if requirement:
+                requirements[self.R.get("requirements", {})[requirement]] = params[0] if params else None
+                continue
+
+            stat, _, _ = process.extractOne(
+                normal_line, self.R.get("stats", {}).keys(), scorer=fuzz.ratio, processor=str.lower, score_cutoff=85
+            ) or (None, 0, None)
+            if stat:
+                stats[self.R.get("stats", {})[stat]] = params
+                continue
+
+            affix, _, _ = process.extractOne(
+                normal_line, self.R.get("affixes", {}), scorer=fuzz.ratio, processor=str.lower, score_cutoff=85
+            ) or (None, 0, None)
+            if affix:
+                affixes.append((affix, params))
+                continue
+
+            remaining_lines.append(line)
+
+        return requirements, stats, affixes, remaining_lines
