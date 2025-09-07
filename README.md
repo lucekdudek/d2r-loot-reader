@@ -59,21 +59,29 @@ The parser produces structured JSON following this schema:
 ```json
 {
   "quality": "Unique|Set|Rare|Magic|Runeword|Base",
-  "name": "Ravenfrost",
-  "base": "Ring", 
-  "slot": "Ring",
-  "tier": "Normal",
-  "requirements": {
-    "level": 45,
-  },
-  "affixes": {
-    "+150-250 to Attack Rating": [193],
-    "Adds 15-45 Cold Damage": [15, 45],
-    "+15-20 to Dexterity": [17],
-    "Cannot be Frozen": [],
-    "+40-70 to Mana": [52]
-  },
-  "tooltip": ["Ravenfrost", "Rare Ring", "Required Level: 45", "..."]
+  "name": "Fortitude",
+  "base": "Great Hauberk",
+  "slot": "Body",
+  "tier": "Elite",
+  "requirements": {"strength": 118, "level": 59},
+  "stats": {"defense": [1596]},
+  "affixes": [
+    ["#% Chance to cast level # [Skill] when struck", [20, 15, "Chilling Armor"]],
+    ["+#% Faster Cast Rate", [25]],
+    ["+#% Enhanced Damage", [300]],
+    ["+#% Enhanced Defense", [215]],
+    ["+# Defense", [15]],
+    ["+# to Life (Based on Character Level)", [101]],
+    ["Replenish Life +#", [7]],
+    ["+#% to Maximum Lightning Resist", [5]],
+    ["All Resistances +#", [29]],
+    ["Damage Reduced by #", [7]],
+    ["+#% Damage Taken Goes To Mana", [12]],
+    ["+# to Light Radius", [1]],
+    ["Increase Maximum Durability #%", [13]],
+    ["Socketed (#)", [4]]
+  ],
+  "tooltip": ["Fortitude", "Great Hauberk", "'ElSolDolLo'", "Defense: 1596", ...]
 }
 ```
 

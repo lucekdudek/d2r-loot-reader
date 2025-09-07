@@ -16,6 +16,7 @@ from d2rlootreader.screen import preprocess
 def _timestamp() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
 
+
 def _ensure_output_directory(file_path: str):
     """
     Ensures that the directory for the given file path exists.
