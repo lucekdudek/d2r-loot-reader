@@ -19,12 +19,19 @@ D2R Loot Reader is a technical tool designed for developers, modders, and enthus
 ### Prerequisites
 
 - **Python 3.8+**
-- **Tesseract OCR**: Install from [official Tesseract site](https://tesseract-ocr.github.io/tessdoc/Installation.html)
+- **Tesseract OCR**
 
 ### Installation
 
 ```bash
-pip install d2rlootreader
+pip install d2r-loot-reader
+```
+
+### CLI Command
+
+```bash
+# Interactive screen capture, OCR and JSON parsing
+d2rlootreader capture
 ```
 
 ### Basic Usage
@@ -43,13 +50,6 @@ lines = [
 parser = ItemParser(lines)
 item_data = parser.parse_item_lines_to_json()
 print(item_data)
-```
-
-### CLI Commands
-
-```bash
-# Interactive screen capture and OCR parsing
-d2rlootreader capture
 ```
 
 ## 📊 Output Format
@@ -171,7 +171,8 @@ for image_path in glob.glob("tooltips/*.png"):
 This is an early-stage tool with known limitations:
 
 - **Special Characters**: Some Unicode symbols may not parse correctly
-- **Font Variations**: Works best with default game UI settings
+- **Font Variations**: Works best with **Large Font Mode** enable in game settings
+- **Supported languages**: English language only
 
 Contributions and bug reports are welcome to improve parsing accuracy.
 
