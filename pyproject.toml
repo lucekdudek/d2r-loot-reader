@@ -4,9 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "d2r-loot-reader"
-version = "0.0.1"
+version = "0.0.2"
 authors = [
-  { name="Your Name", email="you@example.com" },
+  { name="Lucjan Dudek" },
 ]
 description = "Diablo II: Resurrected Loot Tooltip Reader"
 readme = "README.md"
@@ -26,8 +26,8 @@ dependencies = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/your-username/d2r-loot-reader"
-"Bug Tracker" = "https://github.com/your-username/d2r-loot-reader/issues"
+"Homepage" = "https://github.com/lucekdudek/d2r-loot-reader"
+"Bug Tracker" = "https://github.com/lucekdudek/d2r-loot-reader/issues"
 
 [project.scripts]
 d2rlootreader = "d2rlootreader.cli:main"
