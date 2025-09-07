@@ -74,7 +74,7 @@ ITEMS = [
         "base": "Scimitar",
         "slot": "Sword",
         "tier": "Normal",
-        "requirements": {"dexterity": 21, "level": 3},
+        "requirements": {"dexterity": 21, "level": 5},
         "stats": {"one_hand_damage": [2, 9]},
         "affixes": [
             ("+#% Enhanced Damage", [25]),
@@ -97,7 +97,7 @@ ITEMS = [
         "base": "Broad Sword",
         "slot": "Sword",
         "tier": "Normal",
-        "requirements": {"strength": 48, "level": 3},
+        "requirements": {"strength": 48, "level": 5},
         "stats": {"one_hand_damage": [8, 17]},
         "affixes": [
             ("+#% Enhanced Damage", [26]),
@@ -476,7 +476,7 @@ ITEMS = [
         "base": "Runic Talons",
         "slot": "Katar",
         "tier": "Elite",
-        "requirements": {"strength": 115, "dexterity": 115, "level": 67},
+        "requirements": {"class": "Assassin", "strength": 115, "dexterity": 115, "level": 67},
         "stats": {"one_hand_damage": [105, 197]},
         "affixes": [
             ("+# to Martial Arts (Assassin only)", [1]),
@@ -641,6 +641,6 @@ def test_parse_item_lines_to_json(item):
     assert item["base"] == parse_itemed["base"]
     assert item["slot"] == parse_itemed["slot"]
     assert item["tier"] == parse_itemed["tier"]
-    # assert item["requirements"] == parse_itemed["requirements"]
+    assert item["requirements"] == parse_itemed["requirements"]
     assert item["stats"] == parse_itemed["stats"]
     assert item["affixes"] == parse_itemed["affixes"]

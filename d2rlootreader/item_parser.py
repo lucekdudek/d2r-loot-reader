@@ -1,7 +1,7 @@
 import json
 import re
 from enum import Enum
-from typing import Any, Dict, List
+from typing import Any, Dict, Final, List
 
 from rapidfuzz import fuzz, process
 
@@ -19,9 +19,48 @@ class Q(Enum):
 
 
 class ItemParser:
-    _none_match = (None, 0, None)
-    _scorers = [fuzz.ratio, fuzz.token_set_ratio]
-    _num_like = r"(?i)\b(?:\d|[OIlZSBgq])+\b"
+    _none_match: Final = (None, 0, None)
+    _scorers: Final = [fuzz.ratio, fuzz.token_set_ratio]
+    _num_like: Final = r"(?i)\b(?:\d|[OIlZSBgq])+\b"
+    _digit_translation: Final = str.maketrans(
+        {
+            # 0
+            "O": "0",
+            "o": "0",
+            "Ο": "0",
+            "О": "0",
+            "〇": "0",
+            # 1
+            "I": "1",
+            "l": "1",
+            "|": "1",
+            "!": "1",
+            # 2
+            "Z": "2",
+            "z": "2",
+            # 3
+            "E": "3",
+            "e": "3",
+            # 4
+            "A": "4",
+            "a": "4",
+            # 5
+            "S": "5",
+            "s": "5",
+            "$": "5",
+            # 6
+            "G": "6",
+            # 7
+            "T": "7",
+            "t": "7",
+            # 8
+            "B": "8",
+            "b": "8",
+            # 9
+            "g": "9",
+            "q": "9",
+        }
+    )
 
     def __init__(self, lines: List[str]):
         self.R = self.repository_data = self.load_repository_data()
@@ -76,7 +115,20 @@ class ItemParser:
     def _normalize_numbers(self, line: str) -> str:
         numbers = re.findall(self._num_like, line)
         line = re.sub(self._num_like, "#", line)
-        return line, [int(n) if n.isdigit() else n for n in numbers]
+        return line, [self._text_to_int(n) for n in numbers]
+
+    def _text_to_int(self, s: str) -> int:
+        """
+        Convert a string containing OCR/leet-like confusables into an integer.
+        - Transliterates a conservative set of visually confusable characters into ASCII digits.
+        - Keeps any Unicode decimal digits as-is (Python int() accepts them).
+        - Ignores non-digits after transliteration.
+        """
+        normalized = s.translate(self._digit_translation)
+        digits = [ch for ch in normalized if ch.isdigit()]
+        if not digits:
+            return 0
+        return int("".join(digits))
 
     def _join_params(self, line, numbers, skill):
         params = []

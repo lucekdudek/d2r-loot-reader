@@ -14,8 +14,7 @@ from d2rlootreader.screen import preprocess
 
 
 def _timestamp() -> str:
-    return datetime.now(timezone.utc).strftime("[%Y-%m-%d %H:%M:%S.%f]")[:-3]
-
+    return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
 
 def _ensure_output_directory(file_path: str):
     """
@@ -61,33 +60,7 @@ def _save_json(obj, path: str):
         print(f"{_timestamp()} Error: Failed to save JSON to {path}: {e}", file=sys.stderr)
 
 
-def capture_save_command(args):
-    print(f"{_timestamp()} Please select the region of the screen to capture.")
-    captured_image = select_region()
-    if captured_image is None or captured_image.size == 0:
-        print(f"{_timestamp()} Selection canceled. Exiting.", file=sys.stderr)
-        return
-    print(f"{_timestamp()} Region selected and captured.")
-    _ensure_output_directory(args.out)
-    _save_image(captured_image, args.out)
-
-
-def preprocess_file_command(args):
-    input_path = args.input
-    output_path = args.out
-    mode = args.mode
-
-    image = cv2.imread(input_path)
-    if image is None or image.size == 0:
-        print(f"{_timestamp()} Error: Could not read input image from {input_path}", file=sys.stderr)
-        return
-
-    processed_image = preprocess(image, mode=mode)
-    _ensure_output_directory(output_path)
-    _save_image(processed_image, output_path)
-
-
-def capture_ocr_command(args):
+def capture_command(args):
     start_time = datetime.now(timezone.utc)
     command_timestamp = start_time.strftime("%Y%m%d-%H%M%S-%f")[:-3]  # trim to milliseconds
 
@@ -147,39 +120,15 @@ def main():
     parser = argparse.ArgumentParser(description="D2R Loot Reader CLI")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
-    capture_save_parser = subparsers.add_parser(
-        "capture-save", help="Selects a screen region, captures it, and saves to a file."
+    capture_parser = subparsers.add_parser(
+        "capture", help="Selects a screen region, preprocesses it, extracts text with Tesseract and parses it to JSON"
     )
-    capture_save_parser.add_argument(
-        "--out", "-o", required=True, help="Output path for the captured image (e.g., tmp/crop.png)"
-    )
-    capture_save_parser.set_defaults(func=capture_save_command)
-
-    preprocess_file_parser = subparsers.add_parser(
-        "preprocess-file", help="Reads an image, preprocesses it, and saves the result."
-    )
-    preprocess_file_parser.add_argument("--input", "-i", required=True, help="Input image path (e.g., tmp/crop.png)")
-    preprocess_file_parser.add_argument(
-        "--out", "-o", required=True, help="Output path for the processed image (e.g., tmp/crop_adaptive.png)"
-    )
-    preprocess_file_parser.add_argument(
-        "--mode",
-        "-m",
-        choices=["none", "otsu", "adaptive"],
-        default="adaptive",
-        help="Preprocessing mode (none, otsu, adaptive)",
-    )
-    preprocess_file_parser.set_defaults(func=preprocess_file_command)
-
-    capture_ocr_parser = subparsers.add_parser(
-        "capture-ocr", help="Selects a screen region, preprocesses it, and extracts text with Tesseract."
-    )
-    capture_ocr_parser.set_defaults(func=capture_ocr_command)
+    capture_parser.set_defaults(func=capture_command)
 
     args = parser.parse_args()
     if hasattr(args, "func"):
         result = args.func(args)
-        if args.command == "capture-ocr" and result is not None:
+        if args.command == "capture" and result is not None:
             # Already printed to stdout in capture_ocr_command
             pass
     else:
