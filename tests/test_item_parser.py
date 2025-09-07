@@ -183,7 +183,7 @@ ITEMS = [
         "requirements": {"level": 42},
         "stats": {},
         "affixes": [
-            ("+# to [Skill] ([Class] only)", [1, "Martial Arts", "Assassin"]),
+            ("+# to Martial Arts (Assassin only)", [1]),
             ("+# to Life", [23]),
         ],
         "tooltip": [
@@ -203,7 +203,7 @@ ITEMS = [
         "requirements": {"strength": 20, "level": 35},
         "stats": {"defense": [74]},
         "affixes": [
-            ("+# to [Skill] ([Class] only)", [2, "Martial Arts", "Assassin"]),
+            ("+# to Martial Arts (Assassin only)", [2]),
             ("+#% Increased Attack Speed", [20]),
             ("+#% Enhanced Defense", [85]),
             ("Lightning Resist +#%", [14]),
@@ -232,7 +232,7 @@ ITEMS = [
         "requirements": {"level": 67},
         "stats": {"defense": [29]},
         "affixes": [
-            ("+# to [Class] Skill Levels", [2, "Assassin"]),
+            ("+# to Assassin Skill Levels", [2]),
             ("+#% Faster Cast Rate", [20]),
             ("+# to Attack Rating", [87]),
             ("Poison Length Reduced by #%", [50]),
@@ -288,7 +288,7 @@ ITEMS = [
         "requirements": {"strength": 118, "level": 59},
         "stats": {"defense": [1596]},
         "affixes": [
-            ("#% Chance to Cast Level # Chilling Armor When Struck", [20, 15]),
+            ("#% Chance to cast level # [Skill] when struck", [20, 15, "Chilling Armor"]),
             ("+#% Faster Cast Rate", [25]),
             ("+#% Enhanced Damage", [300]),
             ("+#% Enhanced Defense", [215]),
@@ -342,7 +342,7 @@ ITEMS = [
             ("+# to Attack Rating", [2]),
             ("Adds #-# Fire Damage", [5, 30]),
             ("#% Life stolen per hit", [7]),
-            ("+# to [Skill] ([Class] only)", [1, "Sanctuary", "Paladin"]),
+            ("+# to [Skill] (Paladin only)", [1, "Sanctuary"]),
             ("+# to [Skill]", [6, "Battle Command"]),
             ("+# to [Skill]", [2, "Battle Orders"]),
             ("+# to [Skill]", [1, "Battle Cry"]),
@@ -426,7 +426,7 @@ ITEMS = [
             ("Adds #-# Lightning Damage", [6, 45]),
             ("+# to Energy", [35]),
             ("+# to Mana", [70]),
-            # TODO ("Level # [Skill] (#/# Charges)", [11, "Teleport", 13, 69]),
+            ("Level # [Skill] (#/# Charges)", [11, "Teleport", 13, 69]),
             ("+#% Damage to Undead", [50]),
         ],
         "tooltip": [
@@ -479,8 +479,8 @@ ITEMS = [
         "requirements": {"strength": 115, "dexterity": 115, "level": 67},
         "stats": {"one_hand_damage": [105, 197]},
         "affixes": [
-            ("+# to [Skill] ([Class] only)", [1, "Martial Arts", "Assassin"]),
-            ("+# to [Class] Skill Levels", [2, "Assassin"]),
+            ("+# to Martial Arts (Assassin only)", [1]),
+            ("+# to Assassin Skill Levels", [2]),
             ("+#% Faster Hit Recovery", [30]),
             ("+#% Enhanced Damage", [236]),
             ("Adds #-# Damage", [25, 50]),
@@ -544,7 +544,7 @@ ITEMS = [
         "requirements": {"strength": 102, "level": 83},
         "stats": {"defense": [358]},
         "affixes": [
-            # TODO ("#% Chance to cast level # [Skill] when struck", [15, 15, "Poison Nova"]),
+            ("#% Chance to cast level # [Skill] when struck", [15, 15, "Poison Nova"]),
             ("+# to All Skills", [2]),
             ("+#% Increased Attack Speed", [20]),
             ("#% Life stolen per hit", [8]),
@@ -552,7 +552,7 @@ ITEMS = [
             ("+# to Strength", [25]),
             ("+#% to Maximum Poison Resist", [10]),
             ("Poison Resist +#%", [70]),
-            # TODO ("Level 3 Venom (20/20 Charges)", []),
+            ("Level # [Skill] (#/# Charges)", [3, "Venom", 20, 20]),
             ("Socketed (#)", [1]),
         ],
         "tooltip": [
@@ -584,12 +584,12 @@ ITEMS = [
         "requirements": {"level": 75},
         "stats": {},
         "affixes": [
-            # TODO ("#% Chance to cast level # Firestorm on Striking", [5, 10]),
-            ("+# to [Class] Skill Levels", [3, "Assassin"]),
+            ("#% Chance to cast level # [Skill] on striking", [5, 10, "Firestorm"]),
+            ("+# to Assassin Skill Levels", [3]),
             ("+# to all Attributes", [20]),
             ("All Resistances +#", [14]),
             ("+# to Light Radius", [8]),
-            # TODO ("Level 30 Hydra (10/10 Charges)", []),
+            ("Level # [Skill] (#/# Charges)", [30, "Hydra", 10, 10]),
         ],
         "tooltip": [
             "Hellfire Torch",

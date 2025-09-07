@@ -46,6 +46,9 @@ class ItemParser:
             "affixes": {},
             "tooltip": self.lines,
         }
+        if not self.lines:
+            return result
+
         lines = self.lines[:]
 
         result["quality"], result["name"], lines = self._parse_item_quality_name(lines)
@@ -59,41 +62,41 @@ class ItemParser:
 
         return result
 
-    def _normalize_line(self, line: str) -> str:
-        class_, _, _ = process.extractOne(
-            line, self.R.get("classes", {}), scorer=fuzz.partial_token_set_ratio, processor=str.lower, score_cutoff=85
-        ) or (None, 0, None)
-        if class_:
-            align = fuzz.partial_ratio_alignment(line, class_, processor=str.lower)
-            start, end = align.src_start, align.src_end
-            # og_class = line[start:end]
-            line = line[:start] + "[Class]" + line[end:]
-
+    def _normalize_skill(self, line: str) -> str:
         skill, _, _ = process.extractOne(
-            line, self.R.get("skills", {}), scorer=fuzz.token_set_ratio, processor=str.lower, score_cutoff=70
+            line, self.R.get("skills", {}), scorer=fuzz.token_set_ratio, processor=str.lower, score_cutoff=90
         ) or (None, 0, None)
         if skill:
             align = fuzz.partial_ratio_alignment(line, skill, processor=str.lower)
             start, end = align.src_start, align.src_end
-            # og_class = line[start:end]
             line = line[:start] + "[Skill]" + line[end:]
 
+        return line, skill
+
+    def _normalize_numbers(self, line: str) -> str:
         numbers = re.findall(self._num_like, line)
         line = re.sub(self._num_like, "#", line)
+        return line, [int(n) if n.isdigit() else n for n in numbers]
 
+    def _join_params(self, line, numbers, skill):
         params = []
         num_idx = 0
-        for match in re.finditer(r"#|\[Class\]|\[Skill\]", line):
+        for match in re.finditer(r"#|\[Skill\]", line):
             token = match.group(0)
             if token == "#" and num_idx < len(numbers):
-                params.append(int(numbers[num_idx]) if numbers[num_idx].isdigit() else numbers[num_idx])
+                params.append(numbers[num_idx])
                 num_idx += 1
-            elif token == "[Class]" and class_:
-                params.append(class_)
             elif token == "[Skill]" and skill:
                 params.append(skill)
+        return params
 
-        return line, params
+    def _match_class(self, query):
+        class_, _, _ = process.extractOne(
+            query, self.R.get("classes", {}), scorer=fuzz.partial_token_set_ratio, score_cutoff=100
+        ) or (None, 0, None)
+        if class_:
+            align = fuzz.partial_ratio_alignment(query, class_, processor=str.lower)
+            return query[align.src_start : align.src_end]
 
     def _parse_item_quality_name(self, lines):
         name_line = lines[0].strip()
@@ -173,7 +176,7 @@ class ItemParser:
         remaining_lines = []
 
         for line in lines:
-            normal_line, params = self._normalize_line(line)
+            normal_line, numbers = self._normalize_numbers(line)
 
             requirement, _, _ = process.extractOne(
                 normal_line,
@@ -183,21 +186,31 @@ class ItemParser:
                 score_cutoff=85,
             ) or (None, 0, None)
             if requirement:
-                requirements[self.R.get("requirements", {})[requirement]] = params[0] if params else None
+                requirements[self.R.get("requirements", {})[requirement]] = (
+                    numbers[0] if numbers else self._match_class(requirement)
+                )
                 continue
 
             stat, _, _ = process.extractOne(
                 normal_line, self.R.get("stats", {}).keys(), scorer=fuzz.ratio, processor=str.lower, score_cutoff=85
             ) or (None, 0, None)
             if stat:
-                stats[self.R.get("stats", {})[stat]] = params
+                stats[self.R.get("stats", {})[stat]] = numbers
                 continue
 
             affix, _, _ = process.extractOne(
                 normal_line, self.R.get("affixes", {}), scorer=fuzz.ratio, processor=str.lower, score_cutoff=85
             ) or (None, 0, None)
             if affix:
-                affixes.append((affix, params))
+                affixes.append((affix, numbers))
+                continue
+
+            normal_line, skill = self._normalize_skill(normal_line)
+            skill_affix, _, _ = process.extractOne(
+                normal_line, self.R.get("affixes", {}), scorer=fuzz.ratio, processor=str.lower, score_cutoff=85
+            ) or (None, 0, None)
+            if skill_affix:
+                affixes.append((skill_affix, self._join_params(normal_line, numbers, skill)))
                 continue
 
             remaining_lines.append(line)
